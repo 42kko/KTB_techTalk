@@ -8,13 +8,46 @@ OUT_DIR = build
 BIN_DIR = bin
 LIB_DIR = libs/json/include
 
-# Source files by directory
+# Source files
 SRC_FILES = main
 
-# Compile and Linker Flags
+# Compiler
 CXX = clang++
-CXXFLAGS = -std=c++17 -g3 -I$(INC_DIR) -I$(LIB_DIR) -I/opt/homebrew/include -I/opt/homebrew/opt/llvm/include
-LDFLAGS = -L/opt/homebrew/lib -ldpp -lcurl
+
+# Detect environment
+ifeq ($(shell uname -s), Darwin)  # macOS (로컬 환경)
+    DPP_INC_DIR = /opt/homebrew/include
+    DPP_LIB_DIR = /opt/homebrew/lib
+    EXTRA_INCLUDES = -I/opt/homebrew/opt/llvm/include
+    EXTRA_LIBS = -lcurl
+else  # Replit 환경
+    DPP_INC_DIR = ./usr/include
+    DPP_LIB_DIR = ./usr/lib
+    EXTRA_INCLUDES =
+    EXTRA_LIBS =
+endif
+
+# Include paths
+INCLUDES = -I$(INC_DIR) \
+           -I$(LIB_DIR) \
+           -I$(DPP_INC_DIR) \
+           $(EXTRA_INCLUDES)
+
+# Library paths and flags
+LIBS = -L$(DPP_LIB_DIR) \
+       -ldpp \
+       -lpthread \
+       -lssl \
+       -lcrypto \
+       -lopus \
+       -lz \
+       $(EXTRA_LIBS)
+
+# Compile flags
+CXXFLAGS = -std=c++17 -g3 $(INCLUDES)
+
+# Linker flags
+LDFLAGS = $(LIBS)
 
 # Source and Object files
 SRCS = $(addprefix $(SRC_DIR)/, $(addsuffix .cpp, $(SRC_FILES)))
