@@ -1,6 +1,5 @@
 #include <dpp/dpp.h>
 #include <string>
-#include <curl/curl.h>
 #include <dpp/nlohmann/json.hpp>
 using namespace std;
 
