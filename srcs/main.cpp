@@ -1,7 +1,7 @@
 #include <dpp/dpp.h>
 #include <string>
 #include <curl/curl.h>
-#include <nlohmann/json.hpp>
+#include <dpp/nlohmann/json.hpp>
 using namespace std;
 
 const string BOT_TOKEN = "";
@@ -12,60 +12,6 @@ typedef struct Say {
     string authorProfile;
     string message;
 } say;
-
-// CURL 응답 데이터를 저장하는 데 사용될 버퍼
-static string responseBuffer;
-
-// CURL의 WriteCallback 함수
-static size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp) {
-    size_t totalSize = size * nmemb;
-    responseBuffer.append((char*)contents, totalSize);
-    return totalSize;
-}
-
-say get_api(string type, string address, string token) {
-    say ret;
-    CURL* curl;
-    CURLcode res;
-
-    curl = curl_easy_init(); // CURL 초기화
-    if (curl) {
-        struct curl_slist* headers = NULL;
-        responseBuffer.clear(); // 응답 버퍼 초기화
-
-        // Authorization 헤더 추가
-        string authHeader = "Authorization: Bearer " + token;
-        headers = curl_slist_append(headers, authHeader.c_str());
-
-        // CURL 옵션 설정
-        curl_easy_setopt(curl, CURLOPT_URL, address.c_str());
-        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, NULL);
-
-        // 요청 실행
-        res = curl_easy_perform(curl);
-        if (res == CURLE_OK) {
-            // 응답 처리: JSON 파싱
-            try {
-                nlohmann::json jsonData = nlohmann::json::parse(responseBuffer); // JSON 응답 파싱
-                ret.author = jsonData["author"].get<string>();
-                ret.authorProfile = jsonData["authorProfile"].get<string>();
-                ret.message = jsonData["message"].get<string>();
-            } catch (nlohmann::json::parse_error& e) {
-                cerr << "JSON parsing error: " << e.what() << endl;
-            }
-        } else {
-            cerr << "CURL error: " << curl_easy_strerror(res) << endl;
-        }
-
-        // CURL 정리
-        curl_slist_free_all(headers);
-        curl_easy_cleanup(curl);
-    }
-
-    return ret;
-}
 
 int main() {
     dpp::cluster bot(BOT_TOKEN);
@@ -78,12 +24,20 @@ int main() {
             event.reply("Pong!");
         } 
         else if (event.command.get_command_name() == "명언") {
-            say saying = get_api("Get", "https://korean-advice-open-api.vercel.app/api/advice", "");
-            event.reply("**명언:** " + saying.message + "\n- " + saying.author + " - " + saying.authorProfile);
+            event.thinking();
+            bot.request("https://korean-advice-open-api.vercel.app/api/advice", dpp::m_get, [event](const dpp::http_request_completion_t &cc) {
+                say tmp;
+                nlohmann::json jsonData = nlohmann::json::parse(cc.body);
+                tmp.author = jsonData["author"].get<string>();
+                tmp.authorProfile = jsonData["authorProfile"].get<string>();
+                tmp.message = jsonData["message"].get<string>();
+                event.edit_response("**명언:** " + tmp.message + "\n- " + tmp.author + " - " + tmp.authorProfile);
+            });
         }
     });
 
     bot.on_ready([&bot](const dpp::ready_t& event) {
+
         //타이머 옵션
         bot.start_timer([&bot](const dpp::timer& timer){
             bot.request("https://korean-advice-open-api.vercel.app/api/advice", dpp::m_get, [&bot](const dpp::http_request_completion_t& cc) {
@@ -95,7 +49,7 @@ int main() {
 
                 bot.message_create(dpp::message(Channel_ID, "**명언:** " + tmp.message + "\n- " + tmp.author + " - " + tmp.authorProfile));
             });
-        }, 10);
+        }, 10000);
 
         //슬래쉬 명령어
         if (dpp::run_once<struct clear_and_register_commands>()) {
