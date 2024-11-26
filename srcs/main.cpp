@@ -1,5 +1,6 @@
 #include <dpp/dpp.h>
 #include <string>
+#include <cstdlib>
 #include <dpp/nlohmann/json.hpp>
 using namespace std;
 
