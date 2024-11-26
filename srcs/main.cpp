@@ -4,8 +4,8 @@
 #include <dpp/nlohmann/json.hpp>
 using namespace std;
 
-const string BOT_TOKEN = getend("BOT_TOKEN");
-const string Channel_ID = getend("CHANNEL_ID")
+const string BOT_TOKEN = getenv("BOT_TOKEN");
+const string Channel_ID = getenv("CHANNEL_ID")
 
 typedef struct Say {
     string author;
