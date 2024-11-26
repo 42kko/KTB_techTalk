@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: discord
+spec:
+  selector:
+    matchLabels:
+      app: discord
+  template:
+    metadata:
+      labels:
+        app: discord
+    spec:
+      containers:
+        - name: discord
+          # 여러분의 backend image 주소를 입력해주세요.
+          image: krmp-d2hub-idock.9rum.cc/dev-test/repo_38ad9fa9b51c
+          resources:
+            requests:
+              memory: 1Gi
+          envFrom:
+          - configMapRef:
+              name: discord
+              optional: false
