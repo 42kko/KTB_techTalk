@@ -7,11 +7,11 @@ using namespace std;
 const string BOT_TOKEN = getenv("BOT_TOKEN");
 const string Channel_ID = getenv("CHANNEL_ID")
 
-typedef struct Say {
+struct Say {
     string author;
     string authorProfile;
     string message;
-} say;
+};
 
 int main() {
     dpp::cluster bot(BOT_TOKEN);
@@ -26,7 +26,7 @@ int main() {
         else if (event.command.get_command_name() == "명언") {
             event.thinking();
             bot.request("https://korean-advice-open-api.vercel.app/api/advice", dpp::m_get, [event](const dpp::http_request_completion_t &cc) {
-                say tmp;
+                Say tmp;
                 nlohmann::json jsonData = nlohmann::json::parse(cc.body);
                 tmp.author = jsonData["author"].get<string>();
                 tmp.authorProfile = jsonData["authorProfile"].get<string>();
@@ -41,7 +41,7 @@ int main() {
         //타이머 옵션
         bot.start_timer([&bot](const dpp::timer& timer){
             bot.request("https://korean-advice-open-api.vercel.app/api/advice", dpp::m_get, [&bot](const dpp::http_request_completion_t& cc) {
-                say tmp;
+                Say tmp;
                 nlohmann::json jsonData = nlohmann::json::parse(cc.body);
                 tmp.author = jsonData["author"].get<string>();
                 tmp.authorProfile = jsonData["authorProfile"].get<string>();
