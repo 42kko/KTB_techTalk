@@ -1,28 +1,35 @@
 #include <dpp/dpp.h>
 #include <string>
-#include <cstdlib>
+#include <cstdlib> // getenv 사용
 #include <dpp/nlohmann/json.hpp>
 using namespace std;
 
-const string BOT_TOKEN = getenv("BOT_TOKEN");
-const string Channel_ID = getenv("CHANNEL_ID")
-
+// 구조체 정의
 struct Say {
     string author;
     string authorProfile;
     string message;
 };
 
+const string BOT_TOKEN = getenv("BOT_TOKEN") ? getenv("BOT_TOKEN") : "";
+const string Channel_ID = getenv("CHANNEL_ID") ? getenv("CHANNEL_ID") : "";
+
 int main() {
+    // 환경변수가 설정되지 않았을 경우 오류 출력
+    if (BOT_TOKEN.empty() || Channel_ID.empty()) {
+        cerr << "Error: BOT_TOKEN or CHANNEL_ID is not set!" << endl;
+        return 1;
+    }
+
     dpp::cluster bot(BOT_TOKEN);
 
     bot.on_log(dpp::utility::cout_logger());
 
-    //슬래쉬 명령어 작동로직
+    // 슬래쉬 명령어 작동 로직
     bot.on_slashcommand([&bot](const dpp::slashcommand_t& event) {
         if (event.command.get_command_name() == "ping") {
             event.reply("Pong!");
-        } 
+        }
         else if (event.command.get_command_name() == "명언") {
             event.thinking();
             bot.request("https://korean-advice-open-api.vercel.app/api/advice", dpp::m_get, [event](const dpp::http_request_completion_t &cc) {
@@ -37,9 +44,8 @@ int main() {
     });
 
     bot.on_ready([&bot](const dpp::ready_t& event) {
-
-        //타이머 옵션
-        bot.start_timer([&bot](const dpp::timer& timer){
+        // 타이머 옵션
+        bot.start_timer([&bot](const dpp::timer& timer) {
             bot.request("https://korean-advice-open-api.vercel.app/api/advice", dpp::m_get, [&bot](const dpp::http_request_completion_t& cc) {
                 Say tmp;
                 nlohmann::json jsonData = nlohmann::json::parse(cc.body);
@@ -51,33 +57,8 @@ int main() {
             });
         }, 10000);
 
-        //슬래쉬 명령어
+        // 슬래쉬 명령어 등록
         if (dpp::run_once<struct clear_and_register_commands>()) {
-
-            /* 명령어 캐시문제 있을경우 기존 명령어를 다 지우는 옵션
-            //
-            bot.global_commands_get([&bot](const dpp::confirmation_callback_t& callback) {
-                if (callback.is_error()) {
-                    cerr << "Failed to fetch commands: " << callback.get_error().message << endl;
-                    return;
-                }
-
-                auto commands = std::get<dpp::slashcommand_map>(callback.value);
-                for (const auto& command : commands) {
-                    bot.global_command_delete(command.first, [](const dpp::confirmation_callback_t& delete_callback) {
-                        if (delete_callback.is_error()) {
-                            cerr << "Failed to delete command: " << delete_callback.get_error().message << endl;
-                        } else {
-                            cout << "Command deleted successfully!" << endl;
-                        }
-                    });
-                }
-
-                bot.global_command_create(dpp::slashcommand("ping", "Ping pong!", bot.me.id));
-                bot.global_command_create(dpp::slashcommand("명언", "랜덤한 명언 가져오기!", bot.me.id));
-            });
-            */
-
             bot.global_command_create(dpp::slashcommand("ping", "Ping pong!", bot.me.id));
             bot.global_command_create(dpp::slashcommand("명언", "랜덤한 명언 가져오기!", bot.me.id));
         }
